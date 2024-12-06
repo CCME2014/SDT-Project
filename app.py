@@ -15,7 +15,7 @@ from .d_manager import DataCleaner, prepare_data
 import statsmodels.api as sm
 
 st.title('Understanding Demand and Listing Duration')
-st.write('This code utilizes Streamlit for creating a user interface with sections, titles, and data visualizations to explore the relationship between days listed and vehicle price using the data set, 'vehicles_us.csv'. The variables date_posted and model are not used in this analysis.')
+st.write('This code utilizes Streamlit for creating a user interface with sections, titles, and data visualizations, to explore the relationship between days listed and vehicle price using the data set, "vehicles_us.csv". The variables date_posted and model are not used in this analysis.')
 
 # Load the Vehicle data for processing
 df = pd.read_csv('vehicles_us.csv')
