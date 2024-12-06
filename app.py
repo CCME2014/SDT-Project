@@ -85,43 +85,45 @@ with col2:
     ax.set_title(f'Days Listed by {option}')    
     st.pyplot(fig)
     
-# Create streamlit tabs for selecting the variables and displaying the regression model
-with st.tabs():
-    with st.tab("Variable Selection"):
-        # Include a checkbox
-        include_interactions = st.checkbox("Include Interaction Terms?", value=False)
-
-        # Select independent variables
-        selected_independent_variables = st.multiselect('Select Independent Variables for the OLS Regression Model:', 
-                                                        independent_variables, default='days_listed')
-        
-        # Enable interaction selection only if at least 2 independent variables are selected
-        if include_interactions and len(selected_independent_variables) >= 2:       
-           selected_interaction_variables = st.multiselect('Select 2 Variables for an Interaction Analysis (Optional):', independent_variables,
-                                                           max_selections=2)
-        else:
-            selected_interaction_variables = []  # Reset interaction selection if less than 2 independent variables chosen
-  
-        # Warning message
-        if len(selected_interaction_variables) > 2:
-            st.warning("Please select a maximum of 2 options for interaction analysis.")
-
-    with st.tab("Model Results"):
-        # Prepare data based on selections
-        if selected_independent_variables:
-            data = prepare_data(df_all.copy(), selected_independent_variables, selected_interaction_variables)
-            
-            # Add constant term
-            X = sm.add_constant(data)
-            y = df_all['price']
-            
-            # Fit the model
-            model = sm.OLS(y, X).fit()
-                
-            # Display results within Streamlit
-            if model:
-                st.write(model.summary()) # Display model summary
-            else:
-                st.write("Model fitting failed.")
-        else:
-            st.write("Please select your variables in the 'Variable Selection' tab.")
+# =============================================================================
+# # Create streamlit tabs for selecting the variables and displaying the regression model
+# with st.tabs():
+#     with st.tab("Variable Selection"):
+#         # Include a checkbox
+#         include_interactions = st.checkbox("Include Interaction Terms?", value=False)
+# 
+#         # Select independent variables
+#         selected_independent_variables = st.multiselect('Select Independent Variables for the OLS Regression Model:', 
+#                                                         independent_variables, default='days_listed')
+#         
+#         # Enable interaction selection only if at least 2 independent variables are selected
+#         if include_interactions and len(selected_independent_variables) >= 2:       
+#            selected_interaction_variables = st.multiselect('Select 2 Variables for an Interaction Analysis (Optional):', independent_variables,
+#                                                            max_selections=2)
+#         else:
+#             selected_interaction_variables = []  # Reset interaction selection if less than 2 independent variables chosen
+#   
+#         # Warning message
+#         if len(selected_interaction_variables) > 2:
+#             st.warning("Please select a maximum of 2 options for interaction analysis.")
+# 
+#     with st.tab("Model Results"):
+#         # Prepare data based on selections
+#         if selected_independent_variables:
+#             data = prepare_data(df_all.copy(), selected_independent_variables, selected_interaction_variables)
+#             
+#             # Add constant term
+#             X = sm.add_constant(data)
+#             y = df_all['price']
+#             
+#             # Fit the model
+#             model = sm.OLS(y, X).fit()
+#                 
+#             # Display results within Streamlit
+#             if model:
+#                 st.write(model.summary()) # Display model summary
+#             else:
+#                 st.write("Model fitting failed.")
+#         else:
+#             st.write("Please select your variables in the 'Variable Selection' tab.")
+# =============================================================================
