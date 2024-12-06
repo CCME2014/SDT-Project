@@ -11,7 +11,7 @@ import altair as alt
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
-from .d_manager import DataCleaner, prepare_data
+from d_manager import DataCleaner, prepare_data
 import statsmodels.api as sm
 
 st.title('Understanding Demand and Listing Duration')
