@@ -21,6 +21,14 @@ st.write('This code utilizes Streamlit for creating a user interface with sectio
 df = pd.read_csv('vehicles_us.csv')
 df = DataCleaner(df)
 
+
+# Ensure DataCleaner and prepare_data are not called recursively or undefined.
+# Here, simple cleaning is applied as a placeholder.
+def cleaning_data(data, columns=None):
+    if columns:
+        return data[columns].dropna()
+    return data.dropna()
+
 # Create the collections of data frame variables
 complete_list = ['model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color', 'days_listed', 'price']
 independent_variables = ['model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color', 'days_listed'] 
@@ -33,6 +41,14 @@ df_dp = df.clean_data(['days_listed', 'price'])
 df_all = df.clean_data(complete_list)
 df_date_listed_odometer = df.clean_data(['odometer', 'days_listed'])
 df_variables = df.clean_data(variable_choice)
+
+# Cleaning data
+df_price = cleaning_data(df_price, ['price'])
+df_days = cleaning_data(df_days, ['days_listed'])
+df_dp = cleaning_data(df_dp, ['days_listed', 'price'])
+df_all = cleaning_data(df_all)
+df_date_listed_odometer = cleaning_data(df_date_listed_odometer, ['odometer', 'days_listed'])
+df_variables = cleaning_data(df_variables, ['model_year', 'is_4wd', 'cylinders', 'condition', 'fuel', 'transmission', 'type', 'paint_color'])
 
 # Create a section displaying descriptive statistics about the independent variable (days_listed) and the dependent variable (price)
 st.header('Distributions of Variables')
