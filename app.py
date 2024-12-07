@@ -19,57 +19,44 @@ st.write('This code utilizes Streamlit for creating a user interface with sectio
 
 # Load the Vehicle data for processing
 df = pd.read_csv('vehicles_us.csv')
-df = DataCleaner(df)
 
+# Create a DataCleaner object
+cleaner = DataCleaner(df)
 
-# Ensure DataCleaner and prepare_data are not called recursively or undefined.
-# Here, simple cleaning is applied as a placeholder.
-def cleaning_data(data, columns=None):
-    if columns:
-        return data[columns].dropna()
-    return data.dropna()
-
-# Create the collections of data frame variables
-complete_list = ['model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color', 'days_listed', 'price']
-independent_variables = ['model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color', 'days_listed'] 
-variable_choice = ['model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color']
-
-# Create the data frames
-df_price = df.clean_data('price')
-df_days = df.clean_data('days_listed')
-df_dp = df.clean_data(['days_listed', 'price'])
-df_all = df.clean_data(complete_list)
-df_date_listed_odometer = df.clean_data(['odometer', 'days_listed'])
-df_variables = df.clean_data(variable_choice)
-
-# Cleaning data
-df_price = cleaning_data(df_price, ['price'])
-df_days = cleaning_data(df_days, ['days_listed'])
-df_dp = cleaning_data(df_dp, ['days_listed', 'price'])
-df_all = cleaning_data(df_all)
-df_date_listed_odometer = cleaning_data(df_date_listed_odometer, ['odometer', 'days_listed'])
-df_variables = cleaning_data(df_variables, ['model_year', 'is_4wd', 'cylinders', 'condition', 'fuel', 'transmission', 'type', 'paint_color'])
+# Clean all columns in the DataFrame
+cleaner.clean_data(df.columns)
 
 # Create a section displaying descriptive statistics about the independent variable (days_listed) and the dependent variable (price)
 st.header('Distributions of Variables')
+
+# Create a histogram of the dependent variable (price)
+histo_price = cleaner.create_visualization('price', kind='histogram', title='Histogram of Vehicle Price')
+st.write(histo_price)
 
 # Create a figure with two subplots
 fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(8, 6))
 
 # Plot the histogram for the independent variable (days_listed)
-sns.histplot(df_days['days_listed'], kde=True, ax=ax1)
+sns.histplot(df['days_listed'], kde=True, ax=ax1)
 ax1.set_title('Histogram of Days Listed')
 
 # Plot the boxplot for the independent variable (days_listed)
-sns.boxplot(x=df_days['days_listed'], ax=ax2)
+sns.boxplot(x=df['days_listed'], ax=ax2)
 ax2.set_title('Boxplot of Days Listed')
+plt.subplots_adjust(bottom=0.1)  # Adjust spacing between subplots
 st.pyplot(fig)
 
 # Create a section displaying bivariate scatter plots 
 st.header('Exploring Price Trends')
 
+# Create the bar graph for the price mean by days listed
+bar_variables = cleaner.prepare_data_for_visualization('days_listed', 'price').create_visualization(x_col='days_listed', y_col='price_mean', 
+                  error_y='price_std', kind='scatter', title='Average Price by Days Listed with Standard Deviation and Point Size Representing Price Data Quanitity',
+                  size='marker_size')
+st.write(bar_variables)
+
 # Calculate the correlation between days listed and price
-dp_correlation = df_dp['price'].corr(df_dp['days_listed'])
+dp_correlation = df['price'].corr(df['days_listed'])
 st.write(f"Correlation between price and days listed: {dp_correlation:.2f}")
 
 # Create a section for analyzing the relationships and interactions
@@ -78,7 +65,8 @@ col1, col2 = st.columns([1, 3])
 
 # Create the scatter plot between days listed and the odometer
 with col1:
-    pass
+    scatter_date_listed_odometer = cleaner.create_visualization(x_col='days_listed', y_col='odometer', 
+                kind='scatter', title='Days Listed vs. Odometer')
 
 # Create the bar chart for days listed and the selected variable
 with col2:
@@ -86,7 +74,7 @@ with col2:
                           ('model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color'),
                           )
     fig, ax = plt.subplots()
-    sns.barplot(x=option, y='days_listed', data=df_variables, ax=ax)
+    sns.barplot(x=option, y='days_listed', data=df, ax=ax)
     ax.set_title(f'Days Listed by {option}')    
     st.pyplot(fig)
     
@@ -115,11 +103,11 @@ with tabs[0]:  # "Variable Selection"
 with tabs[1]:  # "Model Results"
     # Prepare data based on selections
     if selected_independent_variables:
-        data = prepare_data(df_all.copy(), selected_independent_variables, selected_interaction_variables)
+        data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
         
         # Add constant term
         X = sm.add_constant(data)
-        y = df_all['price']
+        y = df['price']
         
         # Fit the model
         model = sm.OLS(y, X).fit()
