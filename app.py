@@ -50,9 +50,10 @@ st.pyplot(fig)
 st.header('Exploring Price Trends')
 
 # Create the bar graph for the price mean by days listed
-bar_variables = cleaner.prepare_data_for_visualization('days_listed', 'price').create_visualization(x_col='days_listed', y_col='price_mean', 
-                  error_y='price_std', kind='scatter', title='Average Price by Days Listed with Standard Deviation and Point Size Representing Price Data Quanitity',
-                  size='marker_size')
+bar_variables = cleaner.prepare_data_for_visualization('days_listed', 'price')
+fig = px.scatter(bar_variables, x='days_listed', y='price_mean', error_y='price_std',
+                 title='Average Price by Days Listed with Standard Deviation and Point Size Representing Price Data Quantity',
+                 size='marker_size')
 st.write(bar_variables)
 
 # Calculate the correlation between days listed and price
