@@ -75,6 +75,8 @@ with col2:
                           ('model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color'),
                           )
     fig, ax = plt.subplots()
+    df.fillna(method='ffill', inplace=True)  # Replace missing values with the previous value
+    df[option] = df[option].astype('category') # Ensure 'option' is a categorical variable
     sns.barplot(x=option, y='days_listed', data=df, ax=ax)
     ax.set_title(f'Days Listed by {option}')    
     st.pyplot(fig)
