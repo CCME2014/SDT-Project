@@ -90,12 +90,17 @@ with tabs[0]:  # "Variable Selection"
 
     # Select independent variables
     selected_independent_variables = st.multiselect('Select Independent Variables for the OLS Regression Model:', 
-                                                    independent_variables, default='days_listed')
+                                                    df.columns, default='days_listed')
     
     # Enable interaction selection only if at least 2 independent variables are selected
-    if include_interactions and len(selected_independent_variables) >= 2:       
-        selected_interaction_variables = st.multiselect('Select 2 Variables for an Interaction Analysis (Optional):', independent_variables,
-                                                        max_selections=2)
+    if include_interactions and len(selected_independent_variables) >= 2: 
+        max_interactions = st.slider("Maximum number of interactions", min_value=2, max_value=5, value=2)
+        selected_interaction_variables = st.multiselect('Select Variables for Interaction Analysis (Optional):',
+                                                   df.columns,
+                                                   max_selections=max_interactions)
+
+        # selected_interaction_variables = st.multiselect('Select 2 Variables for an Interaction Analysis (Optional):', df.columns,
+                                                        # max_selections=2)
     else:
         selected_interaction_variables = []  # Reset interaction selection if less than 2 independent variables chosen
 
