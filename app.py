@@ -34,27 +34,27 @@ histo_price = cleaner.create_visualization('price', kind='histogram', title='His
 st.write(histo_price)
 
 # Create a figure with two subplots
-fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(8, 6))
+fig1, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(8, 6))
 
 # Plot the histogram for the independent variable (days_listed)
 sns.histplot(df['days_listed'], kde=True, ax=ax1)
-ax1.set_title('Histogram of Days Listed')
+ax1.set_title('Histogram and Boxplot of Days Listed')
 
 # Plot the boxplot for the independent variable (days_listed)
 sns.boxplot(x=df['days_listed'], ax=ax2)
-ax2.set_title('Boxplot of Days Listed')
+# ax2.set_title('Boxplot of Days Listed')
 plt.subplots_adjust(bottom=0.1)  # Adjust spacing between subplots
-st.pyplot(fig)
+st.pyplot(fig1)
 
 # Create a section displaying bivariate scatter plots 
 st.header('Exploring Price Trends')
 
 # Create the bar graph for the price mean by days listed
 bar_variables = cleaner.prepare_data_for_visualization('days_listed', 'price')
-fig = px.scatter(bar_variables, x='days_listed', y='price_mean', error_y='price_std',
+fig2 = px.scatter(bar_variables, x='days_listed', y='price_mean', error_y='price_std',
                  title='Average Price by Days Listed with Standard Deviation and Point Size Representing Price Data Quantity',
                  size='marker_size')
-st.write(bar_variables)
+st.pyplot(fig2)
 
 # Calculate the correlation between days listed and price
 dp_correlation = df['price'].corr(df['days_listed'])
@@ -74,12 +74,12 @@ with col2:
     option = st.selectbox("Select a variable:",
                           ('model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color'),
                           )
-    fig, ax = plt.subplots()
+    fig3, ax = plt.subplots()
     df.fillna(method='ffill', inplace=True)  # Replace missing values with the previous value
     df[option] = df[option].astype('category') # Ensure 'option' is a categorical variable
     sns.barplot(x=option, y='days_listed', data=df, ax=ax)
     ax.set_title(f'Days Listed by {option}')    
-    st.pyplot(fig)
+    st.pyplot(fig3)
     
 # Create streamlit tabs for selecting the variables and displaying the regression model
 tabs = st.tabs(["Variable Selection", "Model Results"])
