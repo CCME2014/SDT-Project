@@ -20,6 +20,10 @@ st.write('This code utilizes Streamlit for creating a user interface with sectio
 # Load the Vehicle data for processing
 df = pd.read_csv('vehicles_us.csv')
 
+# Drop the unwanted columns
+columns_to_drop = ['date_posted', 'model']
+df = df.drop(columns=columns_to_drop)
+
 # Create a DataCleaner object
 cleaner = DataCleaner(df)
 
@@ -66,22 +70,20 @@ st.header('Exploring Interactions and Relationships')
 col1, col2 = st.columns([1, 3]) 
 
 # Create the scatter plot between days listed and the odometer
-with col1:
-    scatter_date_listed_odometer = cleaner.create_visualization(x_col='days_listed', y_col='odometer', 
+scatter_date_listed_odometer = cleaner.create_visualization(x_col='days_listed', y_col='odometer', 
                 kind='scatter', title='Days Listed vs. Odometer')
-    st.write(scatter_date_listed_odometer)
+st.write(scatter_date_listed_odometer)
 
 # Create the bar chart for days listed and the selected variable
-with col2:
-    option = st.selectbox("Select a variable:",
+option = st.selectbox("Select a variable:",
                           ('model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color'),
                           )
-    fig3, ax = plt.subplots()
-    df.fillna(method='ffill', inplace=True)  # Replace missing values with the previous value
-    df[option] = df[option].astype('category') # Ensure 'option' is a categorical variable
-    sns.barplot(x=option, y='days_listed', data=df, ax=ax)
-    ax.set_title(f'Days Listed by {option}')    
-    st.pyplot(fig3)
+fig3, ax = plt.subplots()
+df.fillna(method='ffill', inplace=True)  # Replace missing values with the previous value
+df[option] = df[option].astype('category') # Ensure 'option' is a categorical variable
+sns.barplot(x=option, y='days_listed', data=df, ax=ax)
+ax.set_title(f'Days Listed by {option}')    
+st.pyplot(fig3)
     
 # Create streamlit tabs for selecting the variables and displaying the regression model
 tabs = st.tabs(["Variable Selection", "Model Results"])
@@ -96,13 +98,19 @@ with tabs[0]:  # "Variable Selection"
     
     # Enable interaction selection only if at least 2 independent variables are selected
     if include_interactions and len(selected_independent_variables) >= 2: 
-        max_interactions = st.slider("Maximum number of interactions", min_value=2, max_value=5, value=2)
-        selected_interaction_variables = st.multiselect('Select Variables for Interaction Analysis (Optional):',
-                                                   df.columns,
-                                                   max_selections=max_interactions)
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            selected_interaction_variables = st.multiselect('Select Variables for Interaction Analysis (Optional):',
+                                                            df.columns,
+                                                            max_selections=max_interactions)
+        
+        with col2:
+            max_interactions = st.radio("Maximum number of interactions", [1,2,3,4,5],
+                                        index=None,
+                                        )
+            st.write("You selected:", max_interactions)
 
-        # selected_interaction_variables = st.multiselect('Select 2 Variables for an Interaction Analysis (Optional):', df.columns,
-                                                        # max_selections=2)
     else:
         selected_interaction_variables = []  # Reset interaction selection if less than 2 independent variables chosen
 
@@ -111,20 +119,43 @@ with tabs[0]:  # "Variable Selection"
         st.warning("Please select a maximum of 2 options for interaction analysis.")
 
 with tabs[1]:  # "Model Results"
-    # Prepare data based on selections
-    if selected_independent_variables:
-        data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
+    # # Prepare data based on selections
+    # if selected_independent_variables:
+    #     data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
         
+    #     # Add constant term
+    #     X = sm.add_constant(data)
+    #     y = df['price']
+        
+    #     # Fit the model
+    #     model = sm.OLS(y, X).fit()
+            
+    #     # Display results within Streamlit
+    #     if model:
+    #         st.write(model.summary()) # Display model summary
+    #     else:
+    #         st.write("Model fitting failed.")
+    # else:
+    #     st.write("Please select your variables in the 'Variable Selection' tab.")
+        
+    if selected_independent_variables:
+        # Prepare data, handling categorical variables
+        data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
+    
+        # Handle categorical variables (e.g., using one-hot encoding)
+        categorical_cols = data.select_dtypes(include=['object']).columns
+        data = pd.get_dummies(data, columns=categorical_cols)
+    
         # Add constant term
         X = sm.add_constant(data)
         y = df['price']
-        
+    
         # Fit the model
         model = sm.OLS(y, X).fit()
-            
+    
         # Display results within Streamlit
         if model:
-            st.write(model.summary()) # Display model summary
+            st.write(model.summary())
         else:
             st.write("Model fitting failed.")
     else:
