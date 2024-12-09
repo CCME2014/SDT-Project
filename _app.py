@@ -118,45 +118,96 @@ with tabs[0]:  # "Variable Selection"
     if len(selected_interaction_variables) > 2:
         st.warning("Please select a maximum of 2 options for interaction analysis.")
 
+# Regression Model Section
+tabs = st.tabs(["Variable Selection", "Model Results"])
+
+with tabs[0]:  # "Variable Selection"
+    include_interactions = st.checkbox("Include Interaction Terms?", value=False)
+
+    selected_independent_variables = st.multiselect(
+        'Select Independent Variables for the OLS Regression Model:', 
+        df.columns, default='days_listed')
+
+    if include_interactions and len(selected_independent_variables) >= 2:
+        selected_interaction_variables = st.multiselect(
+            'Select 2 Variables for Interaction Analysis (Optional):', 
+            selected_independent_variables, max_selections=2)
+    else:
+        selected_interaction_variables = []
+
 with tabs[1]:  # "Model Results"
-    # # Prepare data based on selections
-    # if selected_independent_variables:
-    #     data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
-        
-    #     # Add constant term
-    #     X = sm.add_constant(data)
-    #     y = df['price']
-        
-    #     # Fit the model
-    #     model = sm.OLS(y, X).fit()
-            
-    #     # Display results within Streamlit
-    #     if model:
-    #         st.write(model.summary()) # Display model summary
-    #     else:
-    #         st.write("Model fitting failed.")
-    # else:
-    #     st.write("Please select your variables in the 'Variable Selection' tab.")
-        
     if selected_independent_variables:
-        # Prepare data, handling categorical variables
-        data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
-    
+        # Prepare data for regression
+        data = df[selected_independent_variables].copy()
+
         # Handle categorical variables (e.g., using one-hot encoding)
-        categorical_cols = data.select_dtypes(include=['object']).columns
-        data = pd.get_dummies(data, columns=categorical_cols)
-    
+        categorical_cols = data.select_dtypes(include=['object', 'category']).columns
+
+        if len(categorical_cols) > 0:
+            data = pd.get_dummies(data, columns=categorical_cols, drop_first=True)
+
+        # Add interaction terms if specified
+        if selected_interaction_variables:
+            interaction_term = "*".join(selected_interaction_variables)
+            data[interaction_term] = (
+                df[selected_interaction_variables[0]].astype(float) * 
+                df[selected_interaction_variables[1]].astype(float)
+            )
+
         # Add constant term
-        X = sm.add_constant(data)
+        X = sm.add_constant(data, has_constant='add')
         y = df['price']
-    
+
         # Fit the model
         model = sm.OLS(y, X).fit()
-    
-        # Display results within Streamlit
+
+        # Display results
         if model:
             st.write(model.summary())
         else:
             st.write("Model fitting failed.")
     else:
-        st.write("Please select your variables in the 'Variable Selection' tab.")
+        st.write("Please select variables in the 'Variable Selection' tab.")
+
+# with tabs[1]:  # "Model Results"
+#     # # Prepare data based on selections
+#     # if selected_independent_variables:
+#     #     data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
+        
+#     #     # Add constant term
+#     #     X = sm.add_constant(data)
+#     #     y = df['price']
+        
+#     #     # Fit the model
+#     #     model = sm.OLS(y, X).fit()
+            
+#     #     # Display results within Streamlit
+#     #     if model:
+#     #         st.write(model.summary()) # Display model summary
+#     #     else:
+#     #         st.write("Model fitting failed.")
+#     # else:
+#     #     st.write("Please select your variables in the 'Variable Selection' tab.")
+        
+#     if selected_independent_variables:
+#         # Prepare data, handling categorical variables
+#         data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
+    
+#         # Handle categorical variables (e.g., using one-hot encoding)
+#         categorical_cols = data.select_dtypes(include=['object']).columns
+#         data = pd.get_dummies(data, columns=categorical_cols)
+    
+#         # Add constant term
+#         X = sm.add_constant(data)
+#         y = df['price']
+    
+#         # Fit the model
+#         model = sm.OLS(y, X).fit()
+    
+#         # Display results within Streamlit
+#         if model:
+#             st.write(model.summary())
+#         else:
+#             st.write("Model fitting failed.")
+#     else:
+#         st.write("Please select your variables in the 'Variable Selection' tab.")
