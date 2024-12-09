@@ -131,12 +131,20 @@ class DataCleaner:
             fig = px.bar(mean_df, x=x_col, y=y_col, title=title, height=height)
         return fig
 
-# Create a function for preparing variables to fit a OLS Regression Model
 def prepare_data(data, selected_variables, interaction_variables):
     if selected_variables:
         data = data[selected_variables]
+
         if interaction_variables:
             combined_interaction = "*".join(interaction_variables)
             selected_model_variables = selected_variables + [combined_interaction]
             data = data[selected_model_variables]
+
+        # Check for non-numeric columns and convert if necessary
+        non_numeric_cols = data.select_dtypes(include=['object']).columns
+        if non_numeric_cols.any():
+            # Handle non-numeric columns (e.g., one-hot encoding, label encoding)
+            # You can implement your preferred encoding method here
+            data = pd.get_dummies(data, columns=non_numeric_cols)
+
     return data
