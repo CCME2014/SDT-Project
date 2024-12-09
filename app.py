@@ -39,6 +39,7 @@ fig1, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(8, 6))
 # Plot the histogram for the independent variable (days_listed)
 sns.histplot(df['days_listed'], kde=True, ax=ax1)
 ax1.set_title('Histogram and Boxplot of Days Listed')
+ax1.set_xlabel(None)
 
 # Plot the boxplot for the independent variable (days_listed)
 sns.boxplot(x=df['days_listed'], ax=ax2)
@@ -54,7 +55,7 @@ bar_variables = cleaner.prepare_data_for_visualization('days_listed', 'price')
 fig2 = px.scatter(bar_variables, x='days_listed', y='price_mean', error_y='price_std',
                  title='Average Price by Days Listed with Standard Deviation and Point Size Representing Price Data Quantity',
                  size='marker_size')
-st.pyplot(fig2)
+st.plotly_chart(fig2)
 
 # Calculate the correlation between days listed and price
 dp_correlation = df['price'].corr(df['days_listed'])
@@ -68,6 +69,7 @@ col1, col2 = st.columns([1, 3])
 with col1:
     scatter_date_listed_odometer = cleaner.create_visualization(x_col='days_listed', y_col='odometer', 
                 kind='scatter', title='Days Listed vs. Odometer')
+    st.write(scatter_date_listed_odometer)
 
 # Create the bar chart for days listed and the selected variable
 with col2:
