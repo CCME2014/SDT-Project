@@ -85,39 +85,6 @@ sns.barplot(x=option, y='days_listed', data=df, ax=ax)
 ax.set_title(f'Days Listed by {option}')    
 st.pyplot(fig3)
     
-# Create streamlit tabs for selecting the variables and displaying the regression model
-tabs = st.tabs(["Variable Selection", "Model Results"])
-
-with tabs[0]:  # "Variable Selection"
-    # Include a checkbox
-    include_interactions = st.checkbox("Include Interaction Terms?", value=False)
-
-    # Select independent variables
-    selected_independent_variables = st.multiselect('Select Independent Variables for the OLS Regression Model:', 
-                                                    df.columns, default='days_listed')
-    
-    # Enable interaction selection only if at least 2 independent variables are selected
-    if include_interactions and len(selected_independent_variables) >= 2: 
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            selected_interaction_variables = st.multiselect('Select Variables for Interaction Analysis (Optional):',
-                                                            df.columns,
-                                                            max_selections=max_interactions)
-        
-        with col2:
-            max_interactions = st.radio("Maximum number of interactions", [1,2,3,4,5],
-                                        index=None,
-                                        )
-            st.write("You selected:", max_interactions)
-
-    else:
-        selected_interaction_variables = []  # Reset interaction selection if less than 2 independent variables chosen
-
-    # Warning message
-    if len(selected_interaction_variables) > 2:
-        st.warning("Please select a maximum of 2 options for interaction analysis.")
-
 # Regression Model Section
 tabs = st.tabs(["Variable Selection", "Model Results"])
 
