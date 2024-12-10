@@ -7,12 +7,13 @@
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import altair as alt
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
-from d_manager import DataCleaner, prepare_data
-import statsmodels.api as sm
+from d_manager import DataCleaner
 
 st.title('Understanding Demand and Listing Duration')
 st.write('This code utilizes Streamlit for creating a user interface with sections, titles, and data visualizations, to explore the relationship between days listed and vehicle price using the data set, "vehicles_us.csv". The variables date_posted and model are not used in this analysis.')
@@ -37,19 +38,26 @@ st.header('Distributions of Variables')
 histo_price = cleaner.create_visualization('price', kind='histogram', title='Histogram of Vehicle Price')
 st.write(histo_price)
 
-# Create a figure with two subplots
-fig1, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(8, 6))
+# Create the figure with two subplots
+fig = make_subplots(rows=2, cols=1, subplot_titles=("Histogram of Days Listed", "Boxplot of Days Listed"))
 
-# Plot the histogram for the independent variable (days_listed)
-sns.histplot(df['days_listed'], kde=True, ax=ax1)
-ax1.set_title('Histogram and Boxplot of Days Listed')
-ax1.set_xlabel(None)
+# Add the histogram to the first subplot
+fig.add_trace(
+    go.Histogram(x=df['days_listed'], histnorm='probability density'),
+    row=1, col=1
+)
 
-# Plot the boxplot for the independent variable (days_listed)
-sns.boxplot(x=df['days_listed'], ax=ax2)
-# ax2.set_title('Boxplot of Days Listed')
-plt.subplots_adjust(bottom=0.1)  # Adjust spacing between subplots
-st.pyplot(fig1)
+# Add the boxplot to the second subplot
+fig.add_trace(
+    go.Box(x=df['days_listed']),
+    row=2, col=1
+)
+
+# Customize the layout (optional)
+fig.update_layout(height=600, width=800)
+
+# Display the figure in Streamlit
+st.plotly_chart(fig)
 
 # Create a section displaying bivariate scatter plots 
 st.header('Exploring Price Trends')
@@ -67,7 +75,6 @@ st.write(f"Correlation between price and days listed: {dp_correlation:.2f}")
 
 # Create a section for analyzing the relationships and interactions
 st.header('Exploring Interactions and Relationships')
-col1, col2 = st.columns([1, 3]) 
 
 # Create the scatter plot between days listed and the odometer
 scatter_date_listed_odometer = cleaner.create_visualization(x_col='days_listed', y_col='odometer', 
@@ -98,7 +105,7 @@ with tabs[0]:  # "Variable Selection"
     if include_interactions and len(selected_independent_variables) >= 2:
         selected_interaction_variables = st.multiselect(
             'Select 2 Variables for Interaction Analysis (Optional):', 
-            selected_independent_variables, max_selections=2)
+            selected_independent_variables, max_selections=len(selected_independent_variables))
     else:
         selected_interaction_variables = []
 
@@ -135,46 +142,3 @@ with tabs[1]:  # "Model Results"
             st.write("Model fitting failed.")
     else:
         st.write("Please select variables in the 'Variable Selection' tab.")
-
-# with tabs[1]:  # "Model Results"
-#     # # Prepare data based on selections
-#     # if selected_independent_variables:
-#     #     data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
-        
-#     #     # Add constant term
-#     #     X = sm.add_constant(data)
-#     #     y = df['price']
-        
-#     #     # Fit the model
-#     #     model = sm.OLS(y, X).fit()
-            
-#     #     # Display results within Streamlit
-#     #     if model:
-#     #         st.write(model.summary()) # Display model summary
-#     #     else:
-#     #         st.write("Model fitting failed.")
-#     # else:
-#     #     st.write("Please select your variables in the 'Variable Selection' tab.")
-        
-#     if selected_independent_variables:
-#         # Prepare data, handling categorical variables
-#         data = prepare_data(df.copy(), selected_independent_variables, selected_interaction_variables)
-    
-#         # Handle categorical variables (e.g., using one-hot encoding)
-#         categorical_cols = data.select_dtypes(include=['object']).columns
-#         data = pd.get_dummies(data, columns=categorical_cols)
-    
-#         # Add constant term
-#         X = sm.add_constant(data)
-#         y = df['price']
-    
-#         # Fit the model
-#         model = sm.OLS(y, X).fit()
-    
-#         # Display results within Streamlit
-#         if model:
-#             st.write(model.summary())
-#         else:
-#             st.write("Model fitting failed.")
-#     else:
-#         st.write("Please select your variables in the 'Variable Selection' tab.")
