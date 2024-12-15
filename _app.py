@@ -14,6 +14,7 @@ import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
 from d_manager import DataCleaner
+import statsmodels.api as sm
 
 st.title('Understanding Demand and Listing Duration')
 st.write('This code utilizes Streamlit for creating a user interface with sections, titles, and data visualizations, to explore the relationship between days listed and vehicle price using the data set, "vehicles_us.csv". The variables date_posted and model are not used in this analysis.')
@@ -24,6 +25,9 @@ df = pd.read_csv('vehicles_us.csv')
 # Drop the unwanted columns
 columns_to_drop = ['date_posted', 'model']
 df = df.drop(columns=columns_to_drop)
+
+# Fill missing values
+df.fillna(method='ffill', inplace=True)
 
 # Create a DataCleaner object
 cleaner = DataCleaner(df)
@@ -85,15 +89,23 @@ st.write(scatter_date_listed_odometer)
 option = st.selectbox("Select a variable:",
                           ('model_year','is_4wd','cylinders','condition','fuel','transmission','type', 'paint_color'),
                           )
-fig3, ax = plt.subplots()
-df.fillna(method='ffill', inplace=True)  # Replace missing values with the previous value
+# df.fillna(method='ffill', inplace=True)  # Replace missing values with the previous value
 df[option] = df[option].astype('category') # Ensure 'option' is a categorical variable
-sns.barplot(x=option, y='days_listed', data=df, ax=ax)
-ax.set_title(f'Days Listed by {option}')    
-st.pyplot(fig3)
+fig3 = px.bar(df, x=option, y='days_listed', title=f'Days Listed by {option}')
+st.plotly_chart(fig3)
     
 # Regression Model Section
 tabs = st.tabs(["Variable Selection", "Model Results"])
+df['price'] = pd.to_numeric(df['price'], errors='coerce') # Handle potential errors during conversion
+df['odometer'] = pd.to_numeric(df['odometer'], errors='coerce') # Handle potential errors during conversion
+st.text(df.info()) 
+st.write(df)
+st.markdown(f"""
+    **Data Information:**
+    ```
+    {str(df.info())}
+    ```
+    """)
 
 with tabs[0]:  # "Variable Selection"
     include_interactions = st.checkbox("Include Interaction Terms?", value=False)
@@ -105,7 +117,7 @@ with tabs[0]:  # "Variable Selection"
     if include_interactions and len(selected_independent_variables) >= 2:
         selected_interaction_variables = st.multiselect(
             'Select 2 Variables for Interaction Analysis (Optional):', 
-            selected_independent_variables, max_selections=len(selected_independent_variables))
+            selected_independent_variables, max_selections=2)
     else:
         selected_interaction_variables = []
 
@@ -113,8 +125,16 @@ with tabs[1]:  # "Model Results"
     if selected_independent_variables:
         # Prepare data for regression
         data = df[selected_independent_variables].copy()
+        y = df['price']
+        
+        # 1. Handle potential non-numeric values in selected independent variables
+        for col in data.columns:
+            try:    
+                data[col] = pd.to_numeric(data[col], errors='coerce') 
+            except ValueError:
+                pass  # If conversion fails, it's likely a categorical variable
 
-        # Handle categorical variables (e.g., using one-hot encoding)
+        # 2. Handle categorical variables (e.g., using one-hot encoding)
         categorical_cols = data.select_dtypes(include=['object', 'category']).columns
 
         if len(categorical_cols) > 0:
@@ -130,7 +150,6 @@ with tabs[1]:  # "Model Results"
 
         # Add constant term
         X = sm.add_constant(data, has_constant='add')
-        y = df['price']
 
         # Fit the model
         model = sm.OLS(y, X).fit()
