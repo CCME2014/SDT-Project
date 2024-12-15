@@ -98,14 +98,6 @@ st.plotly_chart(fig3)
 tabs = st.tabs(["Variable Selection", "Model Results"])
 df['price'] = pd.to_numeric(df['price'], errors='coerce') # Handle potential errors during conversion
 df['odometer'] = pd.to_numeric(df['odometer'], errors='coerce') # Handle potential errors during conversion
-st.text(df.info()) 
-st.write(df)
-st.markdown(f"""
-    **Data Information:**
-    ```
-    {str(df.info())}
-    ```
-    """)
 
 with tabs[0]:  # "Variable Selection"
     include_interactions = st.checkbox("Include Interaction Terms?", value=False)
