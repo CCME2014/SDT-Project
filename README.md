@@ -14,7 +14,11 @@ d_manager.py: This file defines a class DataCleaner for data cleaning and prepar
 requirements.txt: This file specifies the required Python libraries for running the application.
 
 Data Exploration - The application provides different sections for exploring the data:
+
 Distributions of Variables: This section displays histograms and boxplots of the day listed and price.
+
 Exploring Price Trends: This section shows the average price by days listed with standard deviation and a scatter plot of days listed vs. price. The correlation between price and days listed is also displayed.
+
 Exploring Interactions and Relationships: This section allows you to analyze the relationship between days listed and other vehicle attributes. You can create scatter plots and bar charts to explore various variables and their interactions.
+
 Model Results: This section provides a tab for selecting independent variables, including an optional interaction term. It then attempts to fit an Ordinary Least Squares (OLS) regression model and display the results.
