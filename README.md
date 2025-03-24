@@ -12,10 +12,8 @@ Code Breakdown
 app.py: This file contains the core logic for the Streamlit application. It loads the data, performs cleaning and visualizations, and creates interactive elements to explore the relationship between days listed and price.
 d_manager.py: This file defines a class DataCleaner for data cleaning and preparation tasks. It includes methods for cleaning specific columns, calculating summary statistics, and creating visualizations.
 requirements.txt: This file specifies the required Python libraries for running the application.
-Data Exploration
 
-The application provides different sections for exploring the data:
-
+Data Exploration - The application provides different sections for exploring the data:
 Distributions of Variables: This section displays histograms and boxplots of the day listed and price.
 Exploring Price Trends: This section shows the average price by days listed with standard deviation and a scatter plot of days listed vs. price. The correlation between price and days listed is also displayed.
 Exploring Interactions and Relationships: This section allows you to analyze the relationship between days listed and other vehicle attributes. You can create scatter plots and bar charts to explore various variables and their interactions.
