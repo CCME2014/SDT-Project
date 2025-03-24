@@ -7,13 +7,17 @@ Getting Started
 Ensure you have Python and the required libraries installed (pandas, streamlit, seaborn, plotly.express, matplotlib, statsmodels). You can install them using pip install pandas streamlit seaborn plotly.express matplotlib statsmodels.
 Clone or download this repository.
 Run the application using streamlit run app.py.
+
 Code Breakdown
 
-app.py: This file contains the core logic for the Streamlit application. It loads the data, performs cleaning and visualizations, and creates interactive elements to explore the relationship between days listed and price.
+app.py: This file contains the core logic for the Streamlit application. It loads the data, performs cleaning and visualizations, and creates interactive elements to explore the relationship between days listed and price
+
 d_manager.py: This file defines a class DataCleaner for data cleaning and preparation tasks. It includes methods for cleaning specific columns, calculating summary statistics, and creating visualizations.
+
 requirements.txt: This file specifies the required Python libraries for running the application.
 
-Data Exploration - The application provides different sections for exploring the data:
+Data Exploration
+The application provides different sections for exploring the data:
 
 Distributions of Variables: This section displays histograms and boxplots of the day listed and price.
 
