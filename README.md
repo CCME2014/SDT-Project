@@ -16,8 +16,7 @@ d_manager.py: This file defines a class DataCleaner for data cleaning and prepar
 
 requirements.txt: This file specifies the required Python libraries for running the application.
 
-Data Exploration
-The application provides different sections for exploring the data:
+Data Exploration - the application provides different sections for exploring the data
 
 Distributions of Variables: This section displays histograms and boxplots of the day listed and price.
 
