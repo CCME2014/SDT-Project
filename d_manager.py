@@ -18,28 +18,54 @@ class DataCleaner:
         create_visualization(self, x_col, y_col=None, error_y=None, kind='histogram', title='', marker_size_col=None, height=500): Creates a histogram, scatter plot, or bar chart based on the specified parameters.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, column_names=None, categories=None):
         self.data = data
 
-    def clean_data(self, column_names):
         """
         Performs data cleaning based on the specified column names.
 
         Args:
             column_names (list): A list of column names to clean.
         """
+        if column_names is None:
+            column_names = self.data.columns  # Clean all columns if not specified
 
         for column in column_names:
             if column == 'is_4wd':
                 self.data[column] = self.data[column].fillna(0)
-            elif column in ['date_posted']:
-                self.data[column] = pd.to_datetime(self.data[column])
-            elif column in ['model_year', 'cylinders', 'is_4wd', 'odometer']:
-                self.data[column] = self.data[column].astype('Int64')
-                if column in ['model_year', 'cylinders', 'is_4wd']:
-                    self.data[column] = self.data[column].astype('object')
+            
+        if categories:
+            for x in categories:
+                self.data[x] =  self.data[x].astype('category')
+                
+                for col in column_names:
+                    if col in categories:
+                        pass
+                    else:
+                        try:
+                            self.data[col] = pd.to_numeric( self.data[col]).astype('Int64')
+                        except ValueError:
+                            try:
+                                self.data[col] = pd.to_numeric( self.data[col]).astype('float64')
+                            except ValueError:
+                                pass
 
-        return self.data
+        # Handle categorical columns (mode imputation and conversion to category)
+        categorical_cols = self.data.select_dtypes(include=['category']).columns.tolist()
+        for col in categorical_cols:
+            mode_val = self.data[col].mode()[0] if not self.data[col].mode().empty else None # handles empty mode
+            self.data[col].fillna(mode_val, inplace=True)
+            self.data[col] = self.data[col].astype('category')  # Ensure it stays as category
+
+        # Handle missing values for numeric columns (mean imputation)
+        numeric_cols_with_na = self.data.select_dtypes(include=['Int64']) # Select columns with Int64 dtype
+        numeric_cols_with_na = numeric_cols_with_na.columns[numeric_cols_with_na.isna().any()].tolist() # Apply .isna().any() only to the selected columns to check for NA values
+        for col in numeric_cols_with_na:
+            mean = self.data[col].mean()
+            self.data[col].fillna(round(mean), inplace=True)
+            self.data[col] = self.data[col].astype('Int64')  # Ensure it stays as Int64
+        
+        return None
 
     def tukey_five_number_summary(self, column):
         """

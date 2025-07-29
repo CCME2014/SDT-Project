@@ -6,6 +6,7 @@
 """
 
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -15,25 +16,21 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from d_manager import DataCleaner
 import statsmodels.api as sm
+import itertools
 
 st.title('Understanding Demand and Listing Duration')
 st.write('This code utilizes Streamlit for creating a user interface with sections, titles, and data visualizations, to explore the relationship between days listed and vehicle price using the data set, "vehicles_us.csv". The variables date_posted and model are not used in this analysis.')
 
 # Load the Vehicle data for processing
 df = pd.read_csv('vehicles_us.csv')
+go_category = ['model_year', 'cylinders', 'is_4wd', 'condition', 'fuel', 'transmission', 'type', 'paint_color']
 
 # Drop the unwanted columns
 columns_to_drop = ['date_posted', 'model']
 df = df.drop(columns=columns_to_drop)
 
-# Fill missing values
-df.fillna(method='ffill', inplace=True)
-
 # Create a DataCleaner object
-cleaner = DataCleaner(df)
-
-# Clean all columns in the DataFrame
-cleaner.clean_data(df.columns)
+cleaner = DataCleaner(df, categories=go_category)
 
 # Create a section displaying descriptive statistics about the independent variable (days_listed) and the dependent variable (price)
 st.header('Distributions of Variables')
@@ -94,10 +91,31 @@ df[option] = df[option].astype('category') # Ensure 'option' is a categorical va
 fig3 = px.bar(df, x=option, y='days_listed', title=f'Days Listed by {option}')
 st.plotly_chart(fig3)
     
+
+###### Debugging BEGINNING ########
+st.dataframe(df)
+
+# Function to capture df.info() output
+import io
+import sys
+def capture_df_info(dataframe):
+    buffer = io.StringIO()  # Create a buffer to capture the output
+    sys.stdout = buffer  # Redirect stdout to the buffer
+    dataframe.info()  # This will write to the buffer instead of the console
+    sys.stdout = sys.__stdout__  # Reset stdout to the original
+    return buffer.getvalue()  # Return the content of the buffer
+
+# Capture and display the formatted info
+df_info_str = capture_df_info(df)
+
+# Display the info in the Streamlit app using st.code() for better formatting
+st.code(df_info_str, language='text')
+
+###### Debugging END ########
+
+
 # Regression Model Section
 tabs = st.tabs(["Variable Selection", "Model Results"])
-df['price'] = pd.to_numeric(df['price'], errors='coerce') # Handle potential errors during conversion
-df['odometer'] = pd.to_numeric(df['odometer'], errors='coerce') # Handle potential errors during conversion
 
 with tabs[0]:  # "Variable Selection"
     include_interactions = st.checkbox("Include Interaction Terms?", value=False)
@@ -119,29 +137,69 @@ with tabs[1]:  # "Model Results"
         data = df[selected_independent_variables].copy()
         y = df['price']
         
-        # 1. Handle potential non-numeric values in selected independent variables
-        for col in data.columns:
-            try:    
-                data[col] = pd.to_numeric(data[col], errors='coerce') 
-            except ValueError:
-                pass  # If conversion fails, it's likely a categorical variable
+        # Handle missing values for y (mean imputation)
+        y.fillna(y.mean(), inplace=True)
 
-        # 2. Handle categorical variables (e.g., using one-hot encoding)
-        categorical_cols = data.select_dtypes(include=['object', 'category']).columns
-
+        # Handle categorical variables (ONE-HOT ENCODING)
+        categorical_cols = data.select_dtypes(include=['category']).columns
         if len(categorical_cols) > 0:
-            data = pd.get_dummies(data, columns=categorical_cols, drop_first=True)
+            data = pd.get_dummies(data, columns=categorical_cols, prefix=categorical_cols, drop_first=True)
 
-        # Add interaction terms if specified
+
+        # Capture and display the formatted info
+        df_info_str = capture_df_info(data)
+
+        # Display the info in the Streamlit app using st.code() for better formatting
+        st.code(df_info_str, language='text')
+        st.dataframe(data.head())
+        
+        #CHECK FOR NON-NUMERIC AND WHITESPACE VALUES *BEFORE* ONE HOT ENCODING
+        for col in data.columns:
+            # Check for non-numeric values
+            non_numeric = data[pd.to_numeric(data[col], errors='coerce').isna() & data[col].notna()]
+            if not non_numeric.empty:
+                st.error(f"Non-numeric values found in column '{col}':")
+                st.dataframe(non_numeric)
+                st.stop()  # Stop execution if non-numeric values are found
+    
+            # Check for whitespace-only strings
+            whitespace_only = data[data[col].astype(str).str.isspace()]
+            if not whitespace_only.empty:
+                st.error(f"Whitespace-only strings found in column '{col}':")
+                st.dataframe(whitespace_only)
+                st.stop()  # Stop execution
+                
+                
+        # Add interaction terms (AFTER ONE-HOT ENCODING)
         if selected_interaction_variables:
-            interaction_term = "*".join(selected_interaction_variables)
-            data[interaction_term] = (
-                df[selected_interaction_variables[0]].astype(float) * 
-                df[selected_interaction_variables[1]].astype(float)
-            )
+            all_relevant_cols = []
+            for var in selected_interaction_variables:
+                for col in data.columns:
+                    if col.startswith(var + "_") or col == var:
+                        all_relevant_cols.append(col)
+
+            if len(all_relevant_cols) >= 2:
+                for col1, col2 in itertools.combinations(all_relevant_cols, 2):
+                    data[f"{col1}*{col2}"] = data[col1] * data[col2]
+            else:
+                st.warning("Need at least two variables to create interaction terms.")
+
+        interaction_cols = [col for col in data.columns if '*' in col]
+        # Capture and display the formatted info
+        df_info_str = capture_df_info(data[interaction_cols])
+
+        # Display the info in the Streamlit app using st.code() for better formatting
+        st.code(df_info_str, language='text')
+
+        # Ensure no NaN or infinite values
+        data.fillna(0, inplace=True)
+        data.replace([np.inf, -np.inf], 0, inplace=True)
 
         # Add constant term
         X = sm.add_constant(data, has_constant='add')
+
+        st.write(f"X shape: {X.shape}, dtype: {X.dtypes}")
+        st.write(f"y shape: {y.shape}, dtype: {y.dtype}")
 
         # Fit the model
         model = sm.OLS(y, X).fit()

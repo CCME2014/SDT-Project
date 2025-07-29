@@ -96,7 +96,7 @@ with tabs[1]:  # "Model Results"
 
         # Display results
         if model:
-            st.write(model.summary())
+            st.text(model.summary().as_text())
         else:
             st.write("Model fitting failed.")
     else:
