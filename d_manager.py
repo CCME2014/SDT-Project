@@ -19,7 +19,7 @@ class DataCleaner:
     """
 
     def __init__(self, data, column_names=None, categories=None):
-        self.data = data
+        self.data = data.copy()
 
         """
         Performs data cleaning based on the specified column names.
@@ -33,38 +33,60 @@ class DataCleaner:
         for column in column_names:
             if column == 'is_4wd':
                 self.data[column] = self.data[column].fillna(0)
+            else:
+                numeric_attempt = pd.to_numeric(self.data[column], errors='coerce')
+                if not numeric_attempt.isna().all():
+                    self.data[column] = numeric_attempt.astype('float64')
             
         if categories:
             for x in categories:
-                self.data[x] =  self.data[x].astype('category')
-                
-                for col in column_names:
-                    if col in categories:
-                        pass
-                    else:
-                        try:
-                            self.data[col] = pd.to_numeric( self.data[col]).astype('Int64')
-                        except ValueError:
-                            try:
-                                self.data[col] = pd.to_numeric( self.data[col]).astype('float64')
-                            except ValueError:
-                                pass
-
-        # Handle categorical columns (mode imputation and conversion to category)
-        categorical_cols = self.data.select_dtypes(include=['category']).columns.tolist()
-        for col in categorical_cols:
-            mode_val = self.data[col].mode()[0] if not self.data[col].mode().empty else None # handles empty mode
-            self.data[col].fillna(mode_val, inplace=True)
-            self.data[col] = self.data[col].astype('category')  # Ensure it stays as category
-
-        # Handle missing values for numeric columns (mean imputation)
-        numeric_cols_with_na = self.data.select_dtypes(include=['Int64']) # Select columns with Int64 dtype
-        numeric_cols_with_na = numeric_cols_with_na.columns[numeric_cols_with_na.isna().any()].tolist() # Apply .isna().any() only to the selected columns to check for NA values
+                if x in self.data.columns: # Check if column exists
+                        mode_val = self.data[x].mode()[0] if not self.data[x].mode().empty else None
+                        self.data[x].fillna(mode_val, inplace=True)
+                        self.data[x] = self.data[x].astype('category')
+                    
+        numeric_cols_with_na = self.data.select_dtypes(include=['float64']).columns[self.data.select_dtypes(include=['float64']).isna().any()].tolist()
         for col in numeric_cols_with_na:
             mean = self.data[col].mean()
-            self.data[col].fillna(round(mean), inplace=True)
-            self.data[col] = self.data[col].astype('Int64')  # Ensure it stays as Int64
-        
+            self.data[col].fillna(mean, inplace=True)
+            
+        for col in self.data.columns:
+            if self.data[col].dtype == 'object':
+                # Attempt a final numeric conversion, coercing errors to NaN, then fill
+                numeric_attempt = pd.to_numeric(self.data[col], errors='coerce')
+                if not numeric_attempt.isna().all():
+                    self.data[col] = numeric_attempt.astype('float64').fillna(numeric_attempt.mean()) # Fill with mean of converted numeric values
+
+                
+# =============================================================================
+#                 for col in column_names:
+#                     if col in categories:
+#                         pass
+#                     else:
+#                         try:
+#                             self.data[col] = pd.to_numeric( self.data[col]).astype('Int64')
+#                         except ValueError:
+#                             try:
+#                                 self.data[col] = pd.to_numeric( self.data[col]).astype('float64')
+#                             except ValueError:
+#                                 pass
+# 
+#         # Handle categorical columns (mode imputation and conversion to category)
+#         categorical_cols = self.data.select_dtypes(include=['category']).columns.tolist()
+#         for col in categorical_cols:
+#             mode_val = self.data[col].mode()[0] if not self.data[col].mode().empty else None # handles empty mode
+#             self.data[col].fillna(mode_val, inplace=True)
+#             self.data[col] = self.data[col].astype('category')  # Ensure it stays as category
+# 
+#         # Handle missing values for numeric columns (mean imputation)
+#         numeric_cols_with_na = self.data.select_dtypes(include=['Int64']) # Select columns with Int64 dtype
+#         numeric_cols_with_na = numeric_cols_with_na.columns[numeric_cols_with_na.isna().any()].tolist() # Apply .isna().any() only to the selected columns to check for NA values
+#         for col in numeric_cols_with_na:
+#             mean = self.data[col].mean()
+#             self.data[col].fillna(round(mean), inplace=True)
+#             self.data[col] = self.data[col].astype('Int64')  # Ensure it stays as Int64
+# =============================================================================
+
         return None
 
     def tukey_five_number_summary(self, column):

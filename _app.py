@@ -65,6 +65,11 @@ st.header('Exploring Price Trends')
 
 # Create the bar graph for the price mean by days listed
 bar_variables = cleaner.prepare_data_for_visualization('days_listed', 'price')
+
+# Ensure 'marker_size' is a standard float type (float64) and handle any potential NaNs
+# The .fillna(0) is a safeguard, though unlikely to be needed for a count-derived column.
+bar_variables['marker_size'] = bar_variables['marker_size'].astype(float).fillna(0)
+
 fig2 = px.scatter(bar_variables, x='days_listed', y='price_mean', error_y='price_std',
                  title='Average Price by Days Listed with Standard Deviation and Point Size Representing Price Data Quantity',
                  size='marker_size')
@@ -135,75 +140,44 @@ with tabs[1]:  # "Model Results"
     if selected_independent_variables:
         # Prepare data for regression
         data = df[selected_independent_variables].copy()
-        y = df['price']
-        
-        # Handle missing values for y (mean imputation)
+        y = df['price'].copy()
         y.fillna(y.mean(), inplace=True)
-
-        # Handle categorical variables (ONE-HOT ENCODING)
-        categorical_cols = data.select_dtypes(include=['category']).columns
-        if len(categorical_cols) > 0:
-            data = pd.get_dummies(data, columns=categorical_cols, prefix=categorical_cols, drop_first=True)
-
-
-        # Capture and display the formatted info
-        df_info_str = capture_df_info(data)
-
-        # Display the info in the Streamlit app using st.code() for better formatting
-        st.code(df_info_str, language='text')
-        st.dataframe(data.head())
-        
-        #CHECK FOR NON-NUMERIC AND WHITESPACE VALUES *BEFORE* ONE HOT ENCODING
-        for col in data.columns:
-            # Check for non-numeric values
-            non_numeric = data[pd.to_numeric(data[col], errors='coerce').isna() & data[col].notna()]
-            if not non_numeric.empty:
-                st.error(f"Non-numeric values found in column '{col}':")
-                st.dataframe(non_numeric)
-                st.stop()  # Stop execution if non-numeric values are found
     
-            # Check for whitespace-only strings
-            whitespace_only = data[data[col].astype(str).str.isspace()]
-            if not whitespace_only.empty:
-                st.error(f"Whitespace-only strings found in column '{col}':")
-                st.dataframe(whitespace_only)
-                st.stop()  # Stop execution
-                
-                
-        # Add interaction terms (AFTER ONE-HOT ENCODING)
-        if selected_interaction_variables:
-            all_relevant_cols = []
-            for var in selected_interaction_variables:
-                for col in data.columns:
-                    if col.startswith(var + "_") or col == var:
-                        all_relevant_cols.append(col)
+        categorical_cols = data.select_dtypes(include=['object', 'category']).columns
+        if len(categorical_cols) > 0:
+            data = pd.get_dummies(data, columns=categorical_cols, drop_first=True)
+    
+        if selected_interaction_variables and len(selected_interaction_variables) == 2:
+            var1_base = selected_interaction_variables[0]
+            var2_base = selected_interaction_variables[1]
+    
+            cols_for_var1 = [col for col in data.columns if col == var1_base or col.startswith(f"{var1_base}_")]
+            cols_for_var2 = [col for col in data.columns if col == var2_base or col.startswith(f"{var2_base}_")]
+    
+            for c1 in cols_for_var1:
+                for c2 in cols_for_var2:
+                    if c1 == c2:
+                        continue
+                    interaction_name = f"{c1}_x_{c2}"
+                    data[interaction_name] = data[c1] * data[c2]
+        elif selected_interaction_variables and len(selected_interaction_variables) != 2:
+            st.warning("Please select exactly two variables for interaction analysis.")
 
-            if len(all_relevant_cols) >= 2:
-                for col1, col2 in itertools.combinations(all_relevant_cols, 2):
-                    data[f"{col1}*{col2}"] = data[col1] * data[col2]
-            else:
-                st.warning("Need at least two variables to create interaction terms.")
+ # --- FINAL, AGGRESSIVE CONVERSION TO NUMPY FLOAT ARRAYS ---
+        # This is the most robust way to ensure statsmodels gets pure numeric data.
+        try:
+            X_final = data.astype(float).replace([np.inf, -np.inf], np.nan).fillna(0.0).to_numpy()
+            y_final = y.astype(float).replace([np.inf, -np.inf], np.nan).fillna(0.0).to_numpy() # Ensure y is also clean
+        except Exception as e:
+            st.error(f"Error during final data conversion for OLS: {e}")
+            st.stop()
 
-        interaction_cols = [col for col in data.columns if '*' in col]
-        # Capture and display the formatted info
-        df_info_str = capture_df_info(data[interaction_cols])
-
-        # Display the info in the Streamlit app using st.code() for better formatting
-        st.code(df_info_str, language='text')
-
-        # Ensure no NaN or infinite values
-        data.fillna(0, inplace=True)
-        data.replace([np.inf, -np.inf], 0, inplace=True)
-
-        # Add constant term
-        X = sm.add_constant(data, has_constant='add')
-
-        st.write(f"X shape: {X.shape}, dtype: {X.dtypes}")
-        st.write(f"y shape: {y.shape}, dtype: {y.dtype}")
+        # Add constant term to the NumPy array
+        X_final = sm.add_constant(X_final, has_constant='add')
 
         # Fit the model
-        model = sm.OLS(y, X).fit()
-
+        model = sm.OLS(y_final, X_final).fit()
+        
         # Display results
         if model:
             st.write(model.summary())
